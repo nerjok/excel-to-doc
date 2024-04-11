@@ -8,7 +8,7 @@ export interface RowInfo {
   comment: string;
   debt: string;
   debtCurrentYear: string;
-  vaste: string;
+  vasteWinter: string;
   measurementWays: string;
   measurementOutside: string;
   waysOwnPayment: string;
@@ -16,4 +16,5 @@ export interface RowInfo {
   payDate: string;
   document: string;
   leftAmount: string;
+  memberPayment: number;
 }

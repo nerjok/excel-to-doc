@@ -6,6 +6,7 @@ import * as PizZip from 'pizzip';
 import readXlsxFile from 'read-excel-file';
 import { BehaviorSubject, map } from 'rxjs';
 import { RowInfo } from './row.model';
+import { FormBuilder } from '@angular/forms';
 
 @Component({
   selector: 'app-root',
@@ -17,6 +18,8 @@ export class AppComponent {
 
   rowsInfo$ = new BehaviorSubject<RowInfo[]>([]);
 
+  paymentCoef$ = new BehaviorSubject<number>(0.13);
+
   rowsInfoKeys$ = this.rowsInfo$.pipe(
     map((data) => {
       if (data[0]) {
@@ -26,7 +29,17 @@ export class AppComponent {
     })
   );
 
-  constructor(private htttpService: HttpClient) {}
+  form = this.fb.group({
+    rows: this.fb.array<boolean>([]),
+  });
+
+  rowsData$ = this.rowsInfo$.pipe(
+    map((data) => {
+      return data.map((row) => Object.values(row));
+    })
+  );
+
+  constructor(private htttpService: HttpClient, private fb: FormBuilder) {}
 
   print() {
     const exl = document.getElementById('excel') as HTMLInputElement;
@@ -41,6 +54,11 @@ export class AppComponent {
       const headerIndex = rows.findIndex(
         (row) => row[1] && row[2] && row[3] && row[5]
       );
+
+      const paymentCoef = rows[4][14] as number;
+
+      if (!isNaN(paymentCoef)) this.paymentCoef$.next(paymentCoef);
+
       const membersList = rows.filter(
         (row) => row[1] && row[2] && row[3] && row[5]
       ) as string[][];
@@ -56,7 +74,7 @@ export class AppComponent {
           comment,
           debt,
           debtCurrentYear,
-          vaste,
+          vasteWinter,
           measurementWays,
           measurementOutside,
           waysOwnPayment,
@@ -64,28 +82,40 @@ export class AppComponent {
           payDate,
           document,
           leftAmount,
-        ]) => ({
-          rowNumber,
-          street,
-          houseNumber,
-          areaNumber,
-          fullName,
-          space,
-          comment,
-          debt,
-          debtCurrentYear,
-          vaste,
-          measurementWays,
-          measurementOutside,
-          waysOwnPayment,
-          payed,
-          payDate,
-          document,
-          leftAmount,
-        })
+        ]) => {
+          const memberPayment = this.paymentCoef$.value * +space;
+          return {
+            rowNumber,
+            street,
+            houseNumber,
+            areaNumber,
+            fullName,
+            space,
+            memberPayment,
+            comment: comment ?? '',
+            debt: debt ?? '',
+            debtCurrentYear,
+            vasteWinter: vasteWinter ?? '',
+            measurementWays,
+            measurementOutside,
+            waysOwnPayment,
+            payed,
+            payDate,
+            document,
+            leftAmount,
+          };
+        }
       );
-
-      console.log('[ excelRows ]', mappedRows, '[ unmapped ]', membersList);
+      this.addRowControls(mappedRows);
+      this.rowsInfo$.next(mappedRows);
+      console.log(
+        '[ excelRows ]',
+        mappedRows,
+        '[ unmapped ]',
+        membersList,
+        '[kof]',
+        paymentCoef
+      );
 
       const templateData = rows
         .filter((row) => row[0])
@@ -94,6 +124,42 @@ export class AppComponent {
         });
       // this.printDoc(templateData);
     });
+  }
+
+  addRowControls(rows: RowInfo[]): void {
+    rows.forEach((row, index) => {
+      this.form.controls.rows.push(this.fb.control(false));
+    });
+  }
+
+  generateDocs(): void {
+    const docs = document.getElementById('doc') as HTMLInputElement;
+    const reader = new FileReader();
+    const fileD = docs.files?.item(0);
+    if (!fileD) {
+      alert('No files selected');
+      return;
+    }
+    const checkboxes = this.form.controls.rows.value;
+    const selecedIndexes = checkboxes.reduce<number[]>(
+      (indexes, value, index) => {
+        if (value) {
+          indexes.push(index);
+        }
+        return indexes;
+      },
+      []
+    );
+
+    if (selecedIndexes.length) {
+      const selectedData = this.rowsInfo$.value.filter((value, index) => {
+        return selecedIndexes.includes(index);
+      });
+      this.printDoc(selectedData);
+    } else {
+      this.printDoc(this.rowsInfo$.value);
+    }
+    console.log('[ selectedRows ]', checkboxes);
   }
 
   printDoc(data: any[]): void {
