@@ -5,8 +5,10 @@
     "ng": "ng",
     "start": "ng serve",
     "build": "ng build",
+    "build0": "ng build && npm run sentry:sourcemaps",
     "watch": "ng build --watch --configuration development",
-    "test": "ng test"
+    "test": "ng test",
+    "sentry:sourcemaps": "sentry-cli sourcemaps inject --org nerjok --project excel-to-doc ./dist/excel-parser && sentry-cli sourcemaps upload --org nerjok --project excel-to-doc ./dist/excel-parser"
   },
   "private": true,
   "dependencies": {
@@ -19,6 +21,8 @@
     "@angular/platform-browser-dynamic": "^17.3.4",
     "@angular/router": "^17.3.4",
     "@ng-bootstrap/ng-bootstrap": "^16.0.0-rc.2",
+    "@sentry/angular-ivy": "^7.110.1",
+    "@sentry/cli": "^2.31.0",
     "bootstrap": "^5.3.3",
     "docxtemplater": "^3.46.2",
     "excel": "^1.0.1",

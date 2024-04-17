@@ -3,10 +3,11 @@ import * as docxtemplater from 'docxtemplater';
 import * as FileSaver from 'file-saver';
 import * as PizZip from 'pizzip';
 import readXlsxFile, { Row } from 'read-excel-file';
-import { BehaviorSubject, Subject, combineLatest, map } from 'rxjs';
+import { BehaviorSubject, map } from 'rxjs';
 import { RowInfo } from './row.model';
 import { FormBuilder } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
+import * as Sentry from '@sentry/browser';
 
 @Component({
   selector: 'app-root',
@@ -58,8 +59,6 @@ export class AppComponent {
       alert('No files selected');
       return;
     }
-
-    console.log('[ excelFileType ]', excelF.name);
 
     readXlsxFile(excelF)
       .then((rows) => {
@@ -131,6 +130,7 @@ export class AppComponent {
         );
         this.addRowControls(mappedRows);
         this.rowsInfo$.next(mappedRows);
+        Sentry.captureMessage(`ExcelFile Uploaded ${mappedRows?.length} succesfully`);
       })
       .catch((err) => {
         console.log('[ failed to loadExcel file]', err);
@@ -189,6 +189,7 @@ export class AppComponent {
       });
 
       FileSaver.saveAs(blob, 'saskaitos.docx');
+      Sentry.captureMessage(`word downloaded succesfully`);
     };
   }
 
