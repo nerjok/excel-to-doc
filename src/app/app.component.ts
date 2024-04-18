@@ -8,6 +8,7 @@ import { RowInfo } from './row.model';
 import { FormBuilder } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import * as Sentry from '@sentry/browser';
+import { toValidNumber } from './app.utils';
 
 @Component({
   selector: 'app-root',
@@ -62,18 +63,15 @@ export class AppComponent {
 
     readXlsxFile(excelF)
       .then((rows) => {
-        const headerIndex = rows.findIndex(
-          (row) => {
-            if (row.length >= 5) {
-              return row.filter(item => item).length > 4;
-            } else {
-              return false;
-            }
+        const headerIndex = rows.findIndex((row) => {
+          if (row.length >= 5) {
+            return row.filter((item) => item).length > 4;
+          } else {
+            return false;
           }
-        );
+        });
 
         this.tableHeader$.next(rows[headerIndex]);
-
 
         const paymentCoef = rows[4][14] as number;
 
@@ -107,30 +105,32 @@ export class AppComponent {
             // const memberPayment = this.paymentCoef$.value * +space;
             const memberPayment = debtCurrentYear;
             return {
-              rowNumber,
-              street,
-              houseNumber,
-              areaNumber,
+              rowNumber: rowNumber ?? '',
+              street: street ?? '',
+              houseNumber: houseNumber ?? '',
+              areaNumber: areaNumber ?? '',
               fullName,
-              space,
+              space: space ?? '',
               comment: comment ?? '',
-              debt: debt ?? '',
-              memberPayment: debtCurrentYear,
+              debt: toValidNumber(debt) ?? '',
+              memberPayment: toValidNumber(debtCurrentYear),
               // debtCurrentYear,
-              vasteWinter: vasteWinter ?? '',
-              measurementWays,
-              measurementOutside,
-              waysOwnPayment,
-              payed,
-              payDate,
-              document,
-              leftAmount,
+              vasteWinter: toValidNumber(vasteWinter),
+              measurementWays: toValidNumber(measurementWays),
+              measurementOutside: toValidNumber(measurementOutside),
+              waysOwnPayment: toValidNumber(waysOwnPayment),
+              payed: toValidNumber(payed),
+              payDate: payDate ?? '',
+              document: document ?? '',
+              leftAmount: toValidNumber(leftAmount),
             };
           }
         );
         this.addRowControls(mappedRows);
         this.rowsInfo$.next(mappedRows);
-        Sentry.captureMessage(`ExcelFile Uploaded ${mappedRows?.length} succesfully`);
+        Sentry.captureMessage(
+          `ExcelFile Uploaded ${mappedRows?.length} succesfully`
+        );
       })
       .catch((err) => {
         console.log('[ failed to loadExcel file]', err);

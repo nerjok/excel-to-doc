@@ -36,7 +36,12 @@
               ></path>
             </svg>
           </span>
-          <input id="excel" class="form-control d-none" type="file" (change)="print($event)" />
+          <input
+            id="excel"
+            class="form-control d-none"
+            type="file"
+            (change)="print($event)"
+          />
         </label>
       </p>
     </div>
@@ -46,23 +51,22 @@
 <!-- // excel upload -->
 
 @if(rowsInfo$.value.length) {
+<div class="row m-3">
+  <button class="btn btn-success" (click)="open(content)">
+    Spausdinti pasirinktus duomenis
+  </button>
+</div>
 <div class="content overflow-scroll p-2" role="main">
   <div class="card-container table-container" [formGroup]="form">
-    <div class="row">
-      <button class="btn btn-success" (click)="open(content)">
-        Spausdinti pasirinktus duomenis
-      </button>
-    </div>
-
     <h3>Koeficientas: {{ paymentCoef$ | async }}</h3>
     <table class="table table-bordered table-hover" formArrayName="rows">
       <thead>
         @if(tableHeader$ | async; as theadClm) {
-          <tr>
-            @for(heading of theadClm; track $index ) {
-              <th>{{ heading }}</th>
-              }
-          </tr>
+        <tr>
+          @for(heading of theadClm; track $index ) {
+          <th>{{ heading }}</th>
+          }
+        </tr>
         }
         <tr>
           <th></th>
