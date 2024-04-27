@@ -1,14 +1,12 @@
-import { Component, TemplateRef, inject } from '@angular/core';
-import * as docxtemplater from 'docxtemplater';
-import * as FileSaver from 'file-saver';
-import * as PizZip from 'pizzip';
-import readXlsxFile, { Row } from 'read-excel-file';
+import { Component, TemplateRef, inject, isDevMode } from '@angular/core';
+import { Row } from 'read-excel-file';
 import { BehaviorSubject, map } from 'rxjs';
 import { RowInfo } from './row.model';
 import { FormBuilder } from '@angular/forms';
 import { NgbModal } from '@ng-bootstrap/ng-bootstrap';
 import * as Sentry from '@sentry/browser';
-import { toValidNumber } from './app.utils';
+import { filetypeValidator } from './app.utils';
+import { FilesUtil } from './files.util';
 
 @Component({
   selector: 'app-root',
@@ -23,11 +21,6 @@ export class AppComponent {
   rowsInfo$ = new BehaviorSubject<RowInfo[]>([]);
   paymentCoef$ = new BehaviorSubject<number>(0.13);
   tableHeader$ = new BehaviorSubject<Row | null>(null);
-  // tableHeader$: = combineLatest([this.rowsInfo$, this.headerIndex$]).pipe(
-  //   map(([rows, index]) => {
-  //     return rows[index];
-  //   })
-  // );
 
   rowsInfoKeys$ = this.rowsInfo$.pipe(
     map((data) => {
@@ -50,90 +43,25 @@ export class AppComponent {
 
   constructor(private fb: FormBuilder) {}
 
-  print(event?: Event) {
-    if (!event) return;
-    const input = event.target as HTMLInputElement;
-    const excelF = input.files?.item(0);
+  showExcelContent(event: Event): void {
+    const excelF = filetypeValidator(event, '.xlsx');
+    if (!excelF) return;
 
-    if (!excelF) {
-      // TODO add file extension check
-      alert('No files selected');
-      return;
-    }
-
-    readXlsxFile(excelF)
-      .then((rows) => {
-        const headerIndex = rows.findIndex((row) => {
-          if (row.length >= 5) {
-            return row.filter((item) => item).length > 4;
-          } else {
-            return false;
-          }
-        });
-
-        this.tableHeader$.next(rows[headerIndex]);
-
-        const paymentCoef = rows[4][14] as number;
-
-        if (!isNaN(paymentCoef)) this.paymentCoef$.next(paymentCoef);
-
-        const membersList = rows.filter(
-          (row) => row[1] && row[2] && row[3] && row[5]
-        ) as string[][];
-        const mappedRows = membersList.map(
-          ([
-            ,
-            rowNumber,
-            street,
-            houseNumber,
-            areaNumber,
-            fullName,
-            space,
-            comment,
-            debt,
-            debtCurrentYear,
-            vasteWinter,
-            measurementWays,
-            measurementOutside,
-            waysOwnPayment,
-            payed,
-            payDate,
-            document,
-            leftAmount,
-          ]) => {
-            // TODO no calculation on app
-            // const memberPayment = this.paymentCoef$.value * +space;
-            const memberPayment = debtCurrentYear;
-            return {
-              rowNumber: rowNumber ?? '',
-              street: street ?? '',
-              houseNumber: houseNumber ?? '',
-              areaNumber: areaNumber ?? '',
-              fullName,
-              space: space ?? '',
-              comment: comment ?? '',
-              debt: toValidNumber(debt) ?? '',
-              memberPayment: toValidNumber(debtCurrentYear),
-              // debtCurrentYear,
-              vasteWinter: toValidNumber(vasteWinter),
-              measurementWays: toValidNumber(measurementWays),
-              measurementOutside: toValidNumber(measurementOutside),
-              waysOwnPayment: toValidNumber(waysOwnPayment),
-              payed: toValidNumber(payed),
-              payDate: payDate ?? '',
-              document: document ?? '',
-              leftAmount: toValidNumber(leftAmount),
-            };
-          }
-        );
-        this.addRowControls(mappedRows);
-        this.rowsInfo$.next(mappedRows);
-        Sentry.captureMessage(
-          `ExcelFile Uploaded ${mappedRows?.length} succesfully`
-        );
+    FilesUtil.parseExcelFile(excelF)
+      .then((data) => {
+        if (data.mappedRows) {
+          this.tableHeader$.next(data.header);
+          if (data.paymentCoef !== null && !isNaN(data.paymentCoef))
+            this.paymentCoef$.next(data.paymentCoef);
+          this.addRowControls(data.mappedRows);
+          this.rowsInfo$.next(data.mappedRows);
+          this.logError(
+            `ExcelFile Uploaded ${data.mappedRows?.length} succesfully`
+          );
+        }
       })
-      .catch((err) => {
-        console.log('[ failed to loadExcel file]', err);
+      .catch((error) => {
+        `ExcelFile Uploaded ${error.toString()} succesfully`;
       });
   }
 
@@ -147,50 +75,13 @@ export class AppComponent {
     this.modalService.open(content, { ariaLabelledBy: 'modal-basic-title' });
   }
 
-  saveDocFile(event?: Event): void {
-    if (!event) return;
-    const input = event.target as HTMLInputElement;
-    const docFile = input.files?.item(0);
-
+  saveDocFile(event: Event): void {
+    const docFile = filetypeValidator(event, '.docx');
     if (!docFile) return;
     this.modalService.dismissAll();
 
-    const reader = new FileReader();
-    if (!docFile) {
-      return;
-    }
     const data = this.getSelectedData();
-    // reader.readAsBinaryString(docFile);
-    reader.readAsArrayBuffer(docFile);
-
-    reader.onerror = function (evt) {
-      console.error('error reading file', evt);
-    };
-    reader.onload = function (evt) {
-      const content = evt.target?.result as any;
-      const zip = new PizZip(content);
-      const doc = new docxtemplater(zip, {
-        paragraphLoop: true,
-        linebreaks: true,
-      });
-
-      doc.setData({
-        raw_loop_pagebreak: `<w:br w:type="page"/>`,
-        dataLoop: [...data],
-      });
-
-      doc.render();
-
-      const blob = doc.getZip().generate({
-        type: 'blob',
-        mimeType:
-          'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
-        compression: 'DEFLATE',
-      });
-
-      FileSaver.saveAs(blob, 'saskaitos.docx');
-      Sentry.captureMessage(`word downloaded succesfully`);
-    };
+    FilesUtil.wordFileGenerator(docFile, data, this.logError);
   }
 
   getSelectedData = (): RowInfo[] => {
@@ -212,6 +103,12 @@ export class AppComponent {
       return selectedData;
     } else {
       return this.rowsInfo$.value;
+    }
+  };
+
+  logError = (data: any) => {
+    if (!isDevMode()) {
+      Sentry.captureMessage(data?.toString());
     }
   };
 }

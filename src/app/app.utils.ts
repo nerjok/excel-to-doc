@@ -12,3 +12,17 @@ export const toValidNumber = (numericValue: any): string => {
   }
   return numericValue ?? '';
 };
+
+
+export const filetypeValidator = (event: Event, fileType: string): false | File => {
+  if (!event || ! fileType) return false;
+  const input = event.target as HTMLInputElement;
+  const uploadedFile = input.files?.item(0);
+  if (!uploadedFile || !uploadedFile.name.includes(fileType)) {
+    alert(`Nepasirinktas teisingas ${fileType} failas`);
+    return false;
+  }
+
+  return uploadedFile;
+}
+

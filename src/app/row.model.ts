@@ -17,4 +17,5 @@ export interface RowInfo {
   document: string;
   leftAmount: string;
   memberPayment: string | number;
+  [index: string]: any;
 }
