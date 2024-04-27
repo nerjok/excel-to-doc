@@ -23,6 +23,8 @@ svg#clouds {
     }
     &> th,
     &> td {
+        padding-top: unset;
+        padding-bottom: unset;
         border : 1px solid lightgray;
     }
 }
