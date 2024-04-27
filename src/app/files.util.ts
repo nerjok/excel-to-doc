@@ -5,6 +5,66 @@ import * as PizZip from 'pizzip';
 import * as docxtemplater from 'docxtemplater';
 import * as FileSaver from 'file-saver';
 
+export const mapToCollumns = (rows: Row[]): RowInfo[] => {
+  // TODO mapp to generic columns like col0, col1
+  return rows.map((columns) => {
+    const [
+      // empty,
+      rowNumber,
+      street,
+      houseNumber,
+      areaNumber,
+      fullName,
+      space,
+      comment,
+      debt,
+      debtCurrentYear,
+      vasteWinter,
+      measurementWays,
+      measurementOutside,
+      waysOwnPayment,
+      payed,
+      payDate,
+      document,
+      leftAmount,
+      ...rest
+    ] = columns;
+
+    const firstRestIndex = columns.length - rest?.length;
+    const restColumns = rest?.length
+      ? rest.reduce<{ [index: string]: any }>((acc, value, index) => {
+          return { ...acc, ['col' + (firstRestIndex + index)]: value };
+        }, {})
+      : {};
+
+    // const memberPayment = this.paymentCoef$.value * +space;
+    const memberPayment = debtCurrentYear;
+    const mappedCol = {
+      rowNumber: rowNumber ?? '',
+      street: street ?? '',
+      houseNumber: houseNumber ?? '',
+      areaNumber: areaNumber ?? '',
+      fullName,
+      space: space ?? '',
+      comment: comment ?? '',
+      debt: toValidNumber(debt) ?? '',
+      memberPayment: toValidNumber(debtCurrentYear),
+      // debtCurrentYear,
+      vasteWinter: toValidNumber(vasteWinter),
+      measurementWays: toValidNumber(measurementWays),
+      measurementOutside: toValidNumber(measurementOutside),
+      waysOwnPayment: toValidNumber(waysOwnPayment),
+      payed: toValidNumber(payed),
+      payDate: payDate ?? '',
+      document: document ?? '',
+      leftAmount: toValidNumber(leftAmount),
+      ...restColumns,
+    } as RowInfo;
+
+    return mappedCol;
+  });
+};
+
 export class FilesUtil {
   static parseExcelFile(excelFile: File): Promise<{
     header: Row | null;
@@ -28,63 +88,8 @@ export class FilesUtil {
           (row) => row[1] && row[2] && row[3] && row[5]
         ) as string[][];
 
-        // TODO mapp to generic columns like col0, col1
-        const mappedRows = notEmptyRows.map((columns) => {
-          const [
-            empty,
-            rowNumber,
-            street,
-            houseNumber,
-            areaNumber,
-            fullName,
-            space,
-            comment,
-            debt,
-            debtCurrentYear,
-            vasteWinter,
-            measurementWays,
-            measurementOutside,
-            waysOwnPayment,
-            payed,
-            payDate,
-            document,
-            leftAmount,
-            ...rest
-          ] = columns;
-
-          const firstRestIndex = columns.length - rest?.length;
-          const restColumns = rest?.length
-            ? rest.reduce<{ [index: string]: any }>((acc, value, index) => {
-                return { ...acc, ['col' + (firstRestIndex + index)]: value };
-              }, {})
-            : {};
-
-          // const memberPayment = this.paymentCoef$.value * +space;
-          const memberPayment = debtCurrentYear;
-          const mappedCol = {
-            rowNumber: rowNumber ?? '',
-            street: street ?? '',
-            houseNumber: houseNumber ?? '',
-            areaNumber: areaNumber ?? '',
-            fullName,
-            space: space ?? '',
-            comment: comment ?? '',
-            debt: toValidNumber(debt) ?? '',
-            memberPayment: toValidNumber(debtCurrentYear),
-            // debtCurrentYear,
-            vasteWinter: toValidNumber(vasteWinter),
-            measurementWays: toValidNumber(measurementWays),
-            measurementOutside: toValidNumber(measurementOutside),
-            waysOwnPayment: toValidNumber(waysOwnPayment),
-            payed: toValidNumber(payed),
-            payDate: payDate ?? '',
-            document: document ?? '',
-            leftAmount: toValidNumber(leftAmount),
-            ...restColumns,
-          };
-
-          return mappedCol;
-        });
+        // NOTE remove first item since first column is empty
+        const mappedRows = mapToCollumns(notEmptyRows.map(arr => arr.slice(1)));
 
         return { header, mappedRows, paymentCoef };
       })

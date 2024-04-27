@@ -1,12 +1,6 @@
 <!-- // excel upload -->
 @if(rowsInfo$.value.length < 1) {
 <div class="animation-size">
-  <!-- <div class="card site-greet display-center">
-    <div class="card-body">
-      <h1>Welcome joined</h1>
-    </div>
-  </div> -->
-
   <div class="card excel-card">
     <div class="card-body">
       <svg
@@ -56,11 +50,40 @@
     Spausdinti pasirinktus duomenis
   </button>
 </div>
-<div class="content overflow-scroll p-2" role="main">
-  <div class="card-container table-container" [formGroup]="form">
+<div class="content overflow-scroll p-3" role="main">
+  <div class="card-container">
     <h3>Koeficientas: {{ paymentCoef$ | async }}</h3>
-    <table class="table table-bordered table-hover" formArrayName="rows">
-      <thead>
+
+    @if(rowsData$ | async; as tableData) {
+    <b> Pasirinkta: {{ selectedRows.length }} </b>
+    <div class="flex">
+      <div class="input-group mb-3">
+        <div class="input-group-prepend">
+          <button label="Clear" class="input-group-text" (click)="clear(dt1)">
+            X
+          </button>
+        </div>
+        <input
+          type="text"
+          class="form-control"
+          (input)="filterGlobal($event, dt1)"
+          aria-label="Search"
+          placeholder="paieskos fraze"
+        />
+      </div>
+    </div>
+    <p-table
+      #dt1
+      [value]="tableData"
+      [rows]="10"
+      [showCurrentPageReport]="true"
+      [rowsPerPageOptions]="[10, 25, 50, 100, 200, 500]"
+      [paginator]="true"
+      currentPageReportTemplate="Showing {first} to {last} of {totalRecords} entries"
+      [globalFilterFields]="['1', '2', '3', '4']"
+      [(selection)]="selectedRows"
+    >
+      <ng-template pTemplate="header">
         @if(tableHeader$ | async; as theadClm) {
         <tr>
           @for(heading of theadClm; track $index ) {
@@ -69,26 +92,31 @@
         </tr>
         }
         <tr>
-          <th></th>
+          <th style="width: 4rem">
+            <p-tableHeaderCheckbox></p-tableHeaderCheckbox>
+          </th>
           @for(heading of rowsInfoKeys$ | async; track $index ) {
-          <th>{{ heading }}</th>
+          <th [pSortableColumn]="'' + $index">
+            <div class="text-nowrap">
+              {{ heading }}
+              <p-sortIcon [field]="'' + $index"></p-sortIcon>
+            </div>
+          </th>
           } @empty { Nothing to display }
         </tr>
-      </thead>
-      <tbody>
-        @for (rowEntry of rowsData$ | async; track $index) {
-
+      </ng-template>
+      <ng-template pTemplate="body" let-product let-rowIndex="rowIndex">
         <tr>
           <td>
-            <input type="checkbox" [formControlName]="$index" />
+            <p-tableCheckbox [value]="product"></p-tableCheckbox>
           </td>
-          @for (column of rowEntry; track $index) {
+          @for (column of product; track $index) {
           <td>{{ column }}</td>
           }
         </tr>
-        }
-      </tbody>
-    </table>
+      </ng-template>
+    </p-table>
+    }
   </div>
 
   <!-- Footer -->

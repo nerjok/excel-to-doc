@@ -1,5 +1,6 @@
 import { APP_INITIALIZER, ErrorHandler, NgModule } from '@angular/core';
 import { BrowserModule } from '@angular/platform-browser';
+import { provideAnimations } from '@angular/platform-browser/animations';
 
 import { AppRoutingModule } from './app-routing.module';
 import { AppComponent } from './app.component';
@@ -9,6 +10,7 @@ import { NgbActiveModal, NgbModule } from '@ng-bootstrap/ng-bootstrap';
 import { FormsModule, ReactiveFormsModule } from '@angular/forms';
 import { Router } from '@angular/router';
 import * as Sentry from "@sentry/angular-ivy";
+import { TableModule } from 'primeng/table';
 
 @NgModule({
   declarations: [AppComponent],
@@ -20,6 +22,7 @@ import * as Sentry from "@sentry/angular-ivy";
     NgbModule,
     ReactiveFormsModule,
     FormsModule,
+    TableModule,
   ],
   providers: [NgbActiveModal,
     {
@@ -37,6 +40,7 @@ import * as Sentry from "@sentry/angular-ivy";
       deps: [Sentry.TraceService],
       multi: true,
     },
+    provideAnimations()
   ],
   bootstrap: [AppComponent],
 })

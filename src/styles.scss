@@ -1,17 +1,28 @@
 /* You can add global styles to this file, and also import other style files */
 body {
-    min-height: 100vh;
+  min-height: 100vh;
 }
 
-
 .modal-content {
-    border-radius: unset;
+  border-radius: unset;
 }
 
 svg#clouds {
-    position: fixed;
-    bottom: -160px;
-    left: -230px;
-    z-index: -10;
-    width: 1920px;
-  }
+  position: fixed;
+  bottom: -160px;
+  left: -230px;
+  z-index: -10;
+  width: 1920px;
+}
+
+.p-datatable-thead > tr,
+.p-datatable .p-datatable-tbody > tr {
+    background: unset;
+    &:hover {
+        background: rgba( 0, 0, 0 , .075);
+    }
+    &> th,
+    &> td {
+        border : 1px solid lightgray;
+    }
+}
