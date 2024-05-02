@@ -7,9 +7,9 @@ const roundBy4Number = (number :number): string => {
 
 export const toValidNumber = (numericValue: any): string => {
   if (typeof numericValue === 'number') return roundBy4Number(numericValue);
-  else if (parseFloat(numericValue)) {
-    return roundBy4Number(parseFloat(numericValue));
-  }
+  // else if (parseFloat(numericValue)) {
+  //   return roundBy4Number(parseFloat(numericValue));
+  // }
   return numericValue ?? '';
 };
 

@@ -17,28 +17,29 @@ export const mapToCollumns = (rows: Row[]): RowInfo[] => {
       fullName,
       space,
       comment,
-      debt,
-      debtCurrentYear,
-      vasteWinter,
-      measurementWays,
-      measurementOutside,
-      waysOwnPayment,
-      payed,
-      payDate,
-      document,
-      leftAmount,
+      // debt,
+      // debtCurrentYear,
+      // vasteWinter,
+      // measurementWays,
+      // measurementOutside,
+      // waysOwnPayment,
+      // payed,
+      // payDate,
+      // document,
+      // leftAmount,
       ...rest
     ] = columns;
 
     const firstRestIndex = columns.length - rest?.length;
     const restColumns = rest?.length
       ? rest.reduce<{ [index: string]: any }>((acc, value, index) => {
-          return { ...acc, ['col' + (firstRestIndex + index)]: value };
+          const cellValue = toValidNumber(value);
+          return { ...acc, ['col' + (firstRestIndex + index)]: cellValue };
         }, {})
       : {};
 
     // const memberPayment = this.paymentCoef$.value * +space;
-    const memberPayment = debtCurrentYear;
+    // const memberPayment = debtCurrentYear;
     const mappedCol = {
       rowNumber: rowNumber ?? '',
       street: street ?? '',
@@ -47,17 +48,17 @@ export const mapToCollumns = (rows: Row[]): RowInfo[] => {
       fullName,
       space: space ?? '',
       comment: comment ?? '',
-      debt: toValidNumber(debt) ?? '',
-      memberPayment: toValidNumber(debtCurrentYear),
-      // debtCurrentYear,
-      vasteWinter: toValidNumber(vasteWinter),
-      measurementWays: toValidNumber(measurementWays),
-      measurementOutside: toValidNumber(measurementOutside),
-      waysOwnPayment: toValidNumber(waysOwnPayment),
-      payed: toValidNumber(payed),
-      payDate: payDate ?? '',
-      document: document ?? '',
-      leftAmount: toValidNumber(leftAmount),
+      // debt: toValidNumber(debt) ?? '',
+      // memberPayment: toValidNumber(debtCurrentYear),
+      // // debtCurrentYear,
+      // vasteWinter: toValidNumber(vasteWinter),
+      // measurementWays: toValidNumber(measurementWays),
+      // measurementOutside: toValidNumber(measurementOutside),
+      // waysOwnPayment: toValidNumber(waysOwnPayment),
+      // payed: toValidNumber(payed),
+      // payDate: payDate ?? '',
+      // document: document ?? '',
+      // leftAmount: toValidNumber(leftAmount),
       ...restColumns,
     } as RowInfo;
 
