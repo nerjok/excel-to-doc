@@ -49,8 +49,26 @@
   <button class="btn btn-success" (click)="open(content)">
     Spausdinti pasirinktus duomenis
   </button>
+  <div>
+    <div class="container d-nones">
+      <fieldset class="scheduler-border">
+        <legend class="scheduler-border">Gmail draft generavimas [test]</legend>
+        <div>
+          <div class="mb-3 me-2 d-inline-block">
+            <label for="doc" class="form-label fw-bold"
+              >Pasirinkti docx template'a</label
+            >
+            <input #templateFile class="form-control" type="file" />
+          </div>
+          <button class="btn btn-primary me-3" (click)="generateDraft()">
+            Generuoti draft mail pasirinktiems įrašams
+          </button>
+        </div>
+      </fieldset>
+    </div>
+  </div>
 </div>
-<div class="content overflow-scroll p-3" role="main">
+<div class="content overflow-scroll0 p-3" role="main">
   <div class="card-container">
     <h3>Koeficientas: {{ paymentCoef$ | async }}</h3>
 

@@ -1,13 +1,267 @@
-<!doctype html>
+<!DOCTYPE html>
 <html lang="en">
-<head>
-  <meta charset="utf-8">
-  <title>ExcelParser</title>
-  <base href="/">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <link rel="icon" type="image/x-icon" href="favicon.ico">
-</head>
-<body>
-  <app-root></app-root>
-</body>
+  <head>
+    <meta charset="utf-8" />
+    <title>ExcelParser</title>
+    <base href="/" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <link rel="icon" type="image/x-icon" href="favicon.ico" />
+  </head>
+  <body>
+    <app-root></app-root>
+
+    <!--Add buttons to initiate auth sequence and sign out-->
+    <div style="display: none;">
+      <button id="authorize_button" onclick="handleAuthClick()">Authorize</button>
+      <button id="signout_button" onclick="handleSignoutClick()">Sign Out</button>
+    </div>
+
+    <script type="text/javascript">
+      // TODO(developer): Set to client ID and API key from the Developer Console
+      const CLIENT_ID = "1044571916423-tocqh3huhnuc1lvlmhlb6tno3gs447mk";
+      const API_KEY = "AIzaSyBxkj8aFWroNw6oiH0-NFdQltqCmN_ZMpw";
+
+      // Discovery doc URL for APIs used by the quickstart
+      const DISCOVERY_DOC =
+        "https://www.googleapis.com/discovery/v1/apis/gmail/v1/rest";
+
+      // Authorization scopes required by the API; multiple scopes can be
+      // included, separated by spaces.
+      // const SCOPES =
+      //   "https://www.googleapis.com/auth/gmail.readonly https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.send https://www.googleapis.com/auth/gmail.modify";
+      const SCOPES =
+        "https://www.googleapis.com/auth/gmail.compose https://www.googleapis.com/auth/gmail.send";
+
+      let tokenClient;
+      let gapiInited = false;
+      let gisInited = false;
+
+      document.getElementById("authorize_button").style.visibility = "hidden";
+      document.getElementById("signout_button").style.visibility = "hidden";
+
+      /**
+       * Callback after api.js is loaded.
+       */
+      function gapiLoaded() {
+        gapi.load("client", initializeGapiClient);
+      }
+
+      /**
+       * Callback after the API client is loaded. Loads the
+       * discovery doc to initialize the API.
+       */
+      async function initializeGapiClient() {
+        await gapi.client.init({
+          apiKey: API_KEY,
+          discoveryDocs: [DISCOVERY_DOC],
+        });
+        gapiInited = true;
+        maybeEnableButtons();
+      }
+
+      /**
+       * Callback after Google Identity Services are loaded.
+       */
+      function gisLoaded() {
+        tokenClient = google.accounts.oauth2.initTokenClient({
+          client_id: CLIENT_ID,
+          scope: SCOPES,
+          callback: "", // defined later
+        });
+        gisInited = true;
+        maybeEnableButtons();
+      }
+
+      /**
+       * Enables user interaction after all libraries are loaded.
+       */
+      function maybeEnableButtons() {
+        if (gapiInited && gisInited) {
+          document.getElementById("authorize_button").style.visibility =
+            "visible";
+        }
+      }
+
+      function isAuthorisedGapi() {
+        if (!gapi.client.getToken()) {
+          handleAuthClick();
+          return false;
+        }
+        return true;
+      }
+      /**
+       *  Sign in the user upon button click.
+       */
+      function handleAuthClick() {
+        tokenClient.callback = async (resp) => {
+          if (resp.error !== undefined) {
+            throw resp;
+          }
+          document.getElementById("signout_button").style.visibility =
+            "visible";
+          document.getElementById("authorize_button").innerText = "Refresh";
+        };
+
+        console.log("[authToken]", gapi.client.getToken());
+
+        if (gapi.client.getToken() === null) {
+          // Prompt the user to select a Google Account and ask for consent to share their data
+          // when establishing a new session.
+          tokenClient.requestAccessToken({ prompt: "consent" });
+        } else {
+          // Skip display of account chooser and consent dialog for an existing session.
+          tokenClient.requestAccessToken({ prompt: "" });
+        }
+      }
+
+      /**
+       *  Sign out the user upon button click.
+       */
+      function handleSignoutClick() {
+        const token = gapi.client.getToken();
+        if (token !== null) {
+          google.accounts.oauth2.revoke(token.access_token);
+          gapi.client.setToken("");
+          document.getElementById("content").innerText = "";
+          document.getElementById("authorize_button").innerText = "Authorize";
+          document.getElementById("signout_button").style.visibility = "hidden";
+        }
+      }
+
+      // begin
+
+      function createEmail(sender, receiver, subject, message, file, clb) {
+        const boundary = "boundary_example";
+        const closeDelimiter = `\r\n--${boundary}--\r\n`;
+
+        const emailLines = [];
+        emailLines.push(`From: ${sender}`);
+        emailLines.push(`To: ${receiver}`);
+        emailLines.push(`Subject: ${subject}`);
+        emailLines.push(
+          'Content-Type: multipart/mixed; boundary="' + boundary + '"'
+        );
+        emailLines.push("");
+        emailLines.push("--" + boundary);
+        emailLines.push('Content-Type: text/plain; charset="UTF-8"');
+        emailLines.push("");
+        emailLines.push(message); // Message body
+
+        if (file) {
+          const reader = new FileReader();
+          reader.onload = function (event) {
+            const attachmentContent = event.target.result.split(",")[1];
+            emailLines.push("");
+            emailLines.push("--" + boundary);
+            emailLines.push(`Content-Type: ${file.type}; name="${file.name}"`);
+            emailLines.push(
+              `Content-Disposition: attachment; filename="${file.name}"`
+            );
+            emailLines.push("Content-Transfer-Encoding: base64");
+            emailLines.push("");
+            emailLines.push(attachmentContent);
+            emailLines.push(closeDelimiter);
+
+            emailLines.push(closeDelimiter);
+
+            const email = emailLines.join("\r\n");
+            const encodedEmail = btoa(unescape(encodeURIComponent(email)));
+            clb(encodedEmail);
+          };
+          reader.readAsDataURL(file);
+        } else {
+          emailLines.push(closeDelimiter);
+
+          const email = emailLines.join("\r\n");
+          const encodedEmail = btoa(email);
+
+          clb(encodedEmail);
+          return encodedEmail;
+        }
+      }
+      // end
+
+      function sendDraft(file, title = "Saskaitos") {
+        const sendMail = (encodedEmail) => {
+          gapi.client.gmail.users.drafts
+            .create({
+              userId: "me",
+              uploadType: "multipart",
+              resource: {
+                message: {
+                  raw: encodedEmail,
+                },
+              },
+            })
+            .then((response) => {
+              console.log("Draft created:", response);
+            });
+        };
+        createEmail(
+          "neriejus@gmail.com",
+          "nerius.jok@gmail.com",
+          title,
+          "message",
+          file,
+          sendMail
+        );
+      }
+      // fdgdf
+      function saveDocFile(documentFile) {
+        const fileInput = document.getElementById("fileInput");
+        const file = documentFile ?? fileInput.files[0];
+        if (file) {
+          const sendMail = (encodedEmail) => {
+            gapi.client.gmail.users.messages
+              .send({
+                userId: "me",
+                resource: {
+                  raw: encodedEmail,
+                },
+              })
+              .then((data) => {
+                console.log("[ sendMessage ]", data);
+              });
+
+            gapi.client.gmail.users.drafts
+              .create({
+                userId: "me",
+                uploadType: "multipart",
+                resource: {
+                  message: {
+                    // raw: btoa(emailContent),
+                    raw: encodedEmail,
+                  },
+                },
+              })
+              .then((response) => {
+                console.log("Draft created:", response);
+              });
+          };
+
+          createEmail(
+            "neriejus@gmail.com",
+            "nerius.jok@gmail.com",
+            "Saskaitos",
+            "message",
+            file,
+            sendMail
+          );
+        }
+      }
+    </script>
+    <script
+      async
+      defer
+      src="https://apis.google.com/js/api.js"
+      onload="gapiLoaded()"
+    ></script>
+    <script
+      async
+      defer
+      src="https://accounts.google.com/gsi/client"
+      onload="gisLoaded()"
+    ></script>
+    <input type="file" id="fileInput" style="display: none;" onchange="saveDocFile()" />
+  </body>
 </html>

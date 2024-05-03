@@ -1,4 +1,11 @@
-import { Component, TemplateRef, inject, isDevMode } from '@angular/core';
+import {
+  Component,
+  ElementRef,
+  TemplateRef,
+  ViewChild,
+  inject,
+  isDevMode,
+} from '@angular/core';
 import { Row } from 'read-excel-file';
 import { BehaviorSubject, map } from 'rxjs';
 import { RowInfo } from './row.model';
@@ -21,6 +28,9 @@ export class AppComponent {
   rowsInfo$ = new BehaviorSubject<RowInfo[]>([]);
   paymentCoef$ = new BehaviorSubject<number>(0.13);
   tableHeader$ = new BehaviorSubject<Row | null>(null);
+
+  @ViewChild('templateFile', { static: false })
+  templateFileInput!: ElementRef<HTMLInputElement>;
 
   rowsInfoKeys$ = this.rowsInfo$.pipe(
     map((data) => {
@@ -69,6 +79,31 @@ export class AppComponent {
 
     const data = this.getSelectedData();
     FilesUtil.wordFileGenerator(docFile, data, this.logError);
+  }
+
+  generateDraft(): void {
+    const templateFile: HTMLInputElement = this.templateFileInput.nativeElement;
+    const selectedFile: File | null = templateFile.files
+      ? templateFile.files[0]
+      : null;
+
+    if (selectedFile) {
+      // @ts-ignore
+      if (!window?.isAuthorisedGapi()) return;
+      const data = this.getSelectedData();
+      data.forEach((data) => {
+        FilesUtil.wordFileGenerator(
+          selectedFile,
+          [data],
+          this.logError,
+          (blob: Blob) => {
+            const df = new File([blob], `sklypo-${data.areaNumber}-sask.docx`);
+            // @ts-ignore
+            window?.sendDraft(df, data.fullName);
+          }
+        );
+      });
+    }
   }
 
   getSelectedData = (): RowInfo[] =>

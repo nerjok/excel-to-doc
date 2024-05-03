@@ -90,7 +90,9 @@ export class FilesUtil {
         ) as string[][];
 
         // NOTE remove first item since first column is empty
-        const mappedRows = mapToCollumns(notEmptyRows.map(arr => arr.slice(1)));
+        const mappedRows = mapToCollumns(
+          notEmptyRows.map((arr) => arr.slice(1))
+        );
 
         return { header, mappedRows, paymentCoef };
       })
@@ -102,7 +104,8 @@ export class FilesUtil {
   static wordFileGenerator(
     wordFile: File,
     data: RowInfo[],
-    log?: (dt: any) => void
+    log?: (dt: any) => void,
+    cb?: (blob: Blob) => void
   ): void {
     if (!wordFile) return;
     const reader = new FileReader();
@@ -136,8 +139,11 @@ export class FilesUtil {
         compression: 'DEFLATE',
       });
 
-      FileSaver.saveAs(blob, 'saskaitos.docx');
+      if (!cb) FileSaver.saveAs(blob, 'saskaitos.docx');
       if (log) log(`word downloaded succesfully`);
+      if (cb) {
+        cb(blob);
+      }
     };
   }
 }
